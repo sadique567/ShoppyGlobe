@@ -10,6 +10,7 @@ const Header = () => {
       <nav>
         <Link to="/">ShoppyGlobe</Link>
         <Link to="/cart">Cart ({cartItems.length})</Link>
+        <Link to="/login">Login </Link>
       </nav>
     </header>
   );

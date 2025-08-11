@@ -8,6 +8,7 @@ import NotFound from './components/NotFound';
 const ProductList = lazy(() => import('./components/productList'));
 const ProductDetail = lazy(() => import('./components/ProductDetails'));
 const Cart = lazy(() => import('./components/Cart'));
+const CenteredAuthTabs = lazy(() => import('./components/Login'));
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <Route path="/" element={<ProductList />} />
             <Route path="/product/:id" element={<ProductDetail />} />
             <Route path="/cart" element={<Cart />} />
+            <Route path="/login" element={<CenteredAuthTabs />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
