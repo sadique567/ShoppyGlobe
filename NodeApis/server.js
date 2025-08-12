@@ -5,11 +5,18 @@ import ShoppyGlobalSchemasModel from "./schema.js";
 import RegistrationModel from "./registration_schema.js";
 import jwt from "jsonwebtoken"
 
+// const dotenv = require('dotenv');
+import dotenv from "dotenv";
+
+dotenv.config();
+
 const app = express();
 app.use(bodyParser.json());
 
+const mongoUri = process.env.MONGO_URI;
+
 mongoose
-  .connect("mongodb://localhost:27017/shoppyglobe")
+  .connect(mongoUri)
   .then(() => {
     console.log("DB Connected");
   })
@@ -20,6 +27,9 @@ mongoose
 app.listen(8778, () => {
   console.log("server is running on 8778");
 });
+
+// mongodb+srv://mohdsadique008:<db_password>@shoppyblobal.epml5c8.mongodb.net/
+// Reliwell12345  mohdsadique008
 
 // login_user  ------------------ user Registration -----------
 app.post("/api/registration" , async (req , res)=>{
