@@ -4,8 +4,12 @@ import bodyParser from "body-parser";
 import ShoppyGlobalSchemasModel from "./schema.js";
 import RegistrationModel from "./registration_schema.js";
 import jwt from "jsonwebtoken"
+import cors from "cors";
+
 
 const app = express();
+app.use(cors({ origin: "http://localhost:5173" , methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"] })); 
 app.use(bodyParser.json());
 
 mongoose
@@ -50,7 +54,7 @@ app.post("/api/login", async (req, res) => {
     if (user.userPassword !== userPassword) {
       return res.status(401).json({ message: "Invalid password" });
     }
-    const accessToken = jwt.sign({userEmail : userEmail , userPassword : userPassword} , "secretKey");
+    const accessToken = jwt.sign({userEmail : userEmail , userPassword : userPassword} , "secretKey" , { expiresIn: "5m" });
 
     // Step 3: Login success
     res.status(200).json({
@@ -84,7 +88,7 @@ app.post("/api/products", async (req, res) => {
 });
 
 
-app.get("/api/getdata" , async (req , res)=>{
+app.get("/api/getdata" ,authenticateUser ,  async (req , res)=>{
  try{
        const allProduct = await ShoppyGlobalSchemasModel.find({} ,  { _id: 0, __v: 0 });
     res.status(200).json(allProduct);
@@ -94,3 +98,16 @@ app.get("/api/getdata" , async (req , res)=>{
     res.status(500).json({message :  "Error Fetching Data" , error : err.message})
  }
 });
+
+
+function authenticateUser(req , res , next){
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(" ")[1];
+  jwt.verify(token , "secretKey" , (err , user)=>{
+    if(err){
+      return res.status(403).json({message : "Invalid JWT Token"});
+    }
+    res.user = user;
+    next()
+  }); 
+}
