@@ -1,68 +1,60 @@
 import mongoose from "mongoose";
 import express from "express";
 import bodyParser from "body-parser";
+import dotenv from "dotenv";
+import jwt from "jsonwebtoken";
+
 import ShoppyGlobalSchemasModel from "./schema.js";
 import RegistrationModel from "./registration_schema.js";
-import jwt from "jsonwebtoken"
-import cors from "cors";
 
+dotenv.config();
 
 const app = express();
-app.use(cors({ origin: "http://localhost:5173" , methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization"] })); 
 app.use(bodyParser.json());
 
+// MongoDB Connection
 mongoose
-  .connect("mongodb://localhost:27017/shoppyglobe")
-  .then(() => {
-    console.log("DB Connected");
-  })
-  .catch((err) => {
-    console.log(`Something is wrong ${err}`);
-  });
+  .connect(process.env.MONGO_URI)
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => console.error(`❌ MongoDB Connection Error: ${err.message}`));
 
-app.listen(8778, () => {
-  console.log("server is running on 8778");
-});
+// ---------- API Routes ----------
 
-// login_user  ------------------ user Registration -----------
-app.post("/api/registration" , async (req , res)=>{
-  try{
+// Registration
+app.post("/api/registration", async (req, res) => {
+  try {
     const reg = new RegistrationModel(req.body);
     const savedReg = await reg.save();
-    res.status(200).json({savedReg});
+    res.status(200).json({ savedReg });
+  } catch (e) {
+    res.status(400).json({ message: e.message });
   }
-  catch (e){
-    res.status(400).json({message : e.message});
-  }
+});
 
-})
-
-// -----------Login with Token---------
+// Login with Token
 app.post("/api/login", async (req, res) => {
   try {
     const { userEmail, userPassword } = req.body;
 
-    // Step 1: Email se user find karo
+    // Find user by email
     const user = await RegistrationModel.findOne({ userEmail });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    // Step 2: Password check karo
+    // Password check
     if (user.userPassword !== userPassword) {
       return res.status(401).json({ message: "Invalid password" });
     }
-    const accessToken = jwt.sign({userEmail : userEmail , userPassword : userPassword} , "secretKey" , { expiresIn: "5m" });
 
-    // Step 3: Login success
+    // Create JWT token
+    const accessToken = jwt.sign(
+      { userEmail },
+      process.env.JWT_SECRET || "secretKey"
+    );
+
     res.status(200).json({
       message: "Login successful",
-      token : accessToken
-    
+      token: accessToken
     });
-
   } catch (e) {
     res.status(500).json({
       error: e.message,
@@ -71,43 +63,34 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-
-
-
-
-// ----------Fetch ALL  Data ----------------------------
+// Add Product
 app.post("/api/products", async (req, res) => {
   try {
     const product = new ShoppyGlobalSchemasModel(req.body);
     const savedProduct = await product.save();
     res.status(200).json({ savedProduct });
   } catch (err) {
-    console.log(`/api/products   ${err}`);
     res.status(400).json({ message: err.message });
   }
 });
 
-
-app.get("/api/getdata" ,authenticateUser ,  async (req , res)=>{
- try{
-       const allProduct = await ShoppyGlobalSchemasModel.find({} ,  { _id: 0, __v: 0 });
+// Fetch All Products
+app.get("/api/getdata", async (req, res) => {
+  try {
+    const allProduct = await ShoppyGlobalSchemasModel.find(
+      {},
+      { _id: 0, __v: 0 }
+    );
     res.status(200).json(allProduct);
-
- }
- catch(err){
-    res.status(500).json({message :  "Error Fetching Data" , error : err.message})
- }
+  } catch (err) {
+    res
+      .status(500)
+      .json({ message: "Error Fetching Data", error: err.message });
+  }
 });
 
-
-function authenticateUser(req , res , next){
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(" ")[1];
-  jwt.verify(token , "secretKey" , (err , user)=>{
-    if(err){
-      return res.status(403).json({message : "Invalid JWT Token"});
-    }
-    res.user = user;
-    next()
-  }); 
-}
+// ---------- Start Server ----------
+const PORT = process.env.PORT || 8778;
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
