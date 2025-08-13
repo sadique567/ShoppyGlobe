@@ -16,7 +16,7 @@ app.use(bodyParser.json());
 const mongoUri = process.env.MONGO_URI;
 
 mongoose
-  .connect(mongoUri)
+  .connect(mongoUri ,{ serverSelectionTimeoutMS: 30000})
   .then(() => {
     console.log("DB Connected");
   })
@@ -101,6 +101,18 @@ app.get("/api/getdata" , async (req , res)=>{
 
  }
  catch(err){
+    res.status(500).json({message :  "Error Fetching Data" , error : err.message})
+ }
+});
+
+// ----------get all user---------
+
+app.get('/api/getUser' ,async (req , res)=>{
+  try{
+    const getUsers = await RegistrationModel.find({} ,  { _id: 0, __v: 0 });
+res.status(200).json(getUsers);
+  }
+   catch(err){
     res.status(500).json({message :  "Error Fetching Data" , error : err.message})
  }
 });
