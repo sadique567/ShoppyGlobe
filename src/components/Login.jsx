@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import { LOGIN_API } from "../utils/baseApi";
-
+import { REGISTRATION_API } from "../utils/baseApi";
 
 export default function CenteredAuthTabs() {
   const [tab, setTab] = useState("login");
   const [loginData, setLoginData] = useState({ email: "", password: "" });
-  const [registerData, setRegisterData] = useState({ email: "", password: "" });
+  const [registerData, setRegisterData] = useState({ id: "", email: "", password: "" });
 
   const handleChange = (e, isRegister = false) => {
     const { name, value } = e.target;
@@ -16,10 +16,10 @@ export default function CenteredAuthTabs() {
     }
   };
 
-  const handleSubmit = async (e) =>  {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (tab === "login") {
-   try {
+      try {
         const res = await fetch(LOGIN_API, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -36,15 +36,37 @@ export default function CenteredAuthTabs() {
         const data = await res.json();
         console.log("Login success:", data);
         alert(`Login successful for: ${data.userEmail || loginData.email}`);
+        if (data.token) {
+          localStorage.setItem("token", data.token);
+        }
       } catch (err) {
         console.error("Login failed:", err);
         alert("Login failed! Please check credentials.");
       }
-    } 
-    
-    else {
+    } else {
+ try {
+        const res = await fetch(REGISTRATION_API, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: Number(registerData.id),
+            userEmail: registerData.email,
+            userPassword: registerData.password,
+          }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
+
+        const data = await res.json();
+        console.log("Registration success:", data);
+        alert(`Registered successfully for: ${registerData.email}`);
+      } catch (err) {
+        console.error("Registration failed:", err);
+        alert("Registration failed! Please try again.");
+      }
+
       console.log("Register payload:", registerData);
-      alert(`Register: ${registerData.email}`);
+      alert(`Register: ID = ${registerData.id}, Email = ${registerData.email}`);
     }
   };
 
@@ -72,7 +94,24 @@ export default function CenteredAuthTabs() {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col items-center">
-          <label htmlFor="email" className="block self-start ml-7 " >Email</label>
+          
+          {/* ID field only for Register */}
+          {tab === "register" && (
+            <>
+              <label htmlFor="id" className="block self-start ml-7">ID</label>
+              <input
+                name="id"
+                type="number"
+                placeholder="Enter ID"
+                value={registerData.id}
+                onChange={(e) => handleChange(e, true)}
+                required
+                className="h-12 w-80 border border-gray-300 rounded-[10px] px-3 mb-4 focus:ring-2 focus:ring-indigo-300 focus:outline-none"
+              />
+            </>
+          )}
+
+          <label htmlFor="email" className="block self-start ml-7">Email</label>
           <input
             name="email"
             type="email"
@@ -82,7 +121,8 @@ export default function CenteredAuthTabs() {
             required
             className="h-12 w-80 border border-gray-300 rounded-[10px] px-3 mb-4 focus:ring-2 focus:ring-indigo-300 focus:outline-none"
           />
-          <label htmlFor="password" className="block self-start ml-7 " >Password</label>
+
+          <label htmlFor="password" className="block self-start ml-7">Password</label>
           <input
             name="password"
             type="password"
@@ -110,15 +150,3 @@ export default function CenteredAuthTabs() {
     </div>
   );
 }
-
-
-
-// const Login = () =>{
-//     return (
-// <>
-// Login PAge
-// </>
-//     );
-
-// }
-// export default Login
